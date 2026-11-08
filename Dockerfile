@@ -19,7 +19,7 @@ FROM gcr.io/distroless/static-debian12:nonroot
 
 COPY --from=build /out/server /server
 
-USER nonroot:nonroot
+USER 65532:65532
 EXPOSE 8080
 
 HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
