@@ -1,5 +1,5 @@
 # BEFORE: naive build, kept as the baseline for the size comparison.
-FROM golang:1.25
+FROM golang:1
 
 WORKDIR /app
 COPY app/ .

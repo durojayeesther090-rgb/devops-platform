@@ -1,7 +1,7 @@
 # AFTER: hardened multi-stage build.
 
 # ---- Stage 1: build ----
-FROM golang:1.25-alpine AS build
+FROM golang:1-alpine AS build
 ARG VERSION=dev
 WORKDIR /src
 
