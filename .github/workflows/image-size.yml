@@ -1,0 +1,52 @@
+name: image-size-comparison
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build naive image (before)
+        run: |
+          start=$(date +%s)
+          docker build -f Dockerfile.naive -t api:naive .
+          echo "NAIVE_SECS=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
+
+      - name: Build hardened image (after)
+        run: |
+          start=$(date +%s)
+          docker build -f Dockerfile --build-arg VERSION="${GITHUB_SHA::7}" -t api:hardened .
+          echo "HARDENED_SECS=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
+
+      - name: Smoke-test hardened image
+        run: |
+          docker run -d --name api -p 8080:8080 api:hardened
+          sleep 5
+          curl -fsS localhost:8080/healthz
+          curl -fsS localhost:8080/
+          echo
+          docker inspect --format 'health={{.State.Health.Status}}' api
+          docker inspect --format 'user={{.Config.User}}' api
+
+      - name: Write before/after table
+        run: |
+          n=$(docker image inspect api:naive    --format '{{.Size}}')
+          h=$(docker image inspect api:hardened --format '{{.Size}}')
+          nmb=$(( n / 1000000 ))
+          hmb=$(( h / 1000000 ))
+          pct=$(( 100 - (h * 100 / n) ))
+          {
+            echo "## Image size: before vs after"
+            echo
+            echo "| Image | Size | Build time | Runs as |"
+            echo "|---|---|---|---|"
+            echo "| naive (golang:1.23) | ${nmb} MB | ${NAIVE_SECS}s | root |"
+            echo "| hardened (distroless, multi-stage) | ${hmb} MB | ${HARDENED_SECS}s | nonroot |"
+            echo
+            echo "**Reduction: ${pct}%**"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,9 @@
+# BEFORE: naive build, kept as the baseline for the size comparison.
+FROM golang:1.25
+
+WORKDIR /app
+COPY app/ .
+RUN go build -o server .
+
+EXPOSE 8080
+CMD ["./server"]
